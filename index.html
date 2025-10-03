@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech-X-OSINT Pro Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dark-bg: #1C1C28;
+            --module-bg: #282838;
+            --accent-blue: #4A90E2;
+            --accent-green: #7ED321;
+            --main-text: #f3f4f6;
+            --log-area-bg: #15151F;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--main-text);
+        }
+        /* Custom scrollbar for log areas */
+        .log-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .log-scroll::-webkit-scrollbar-thumb {
+            background-color: var(--accent-blue);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="font-mono min-h-screen p-6">
+
+    <div class="max-w-[1400px] mx-auto">
+        <header class="text-center pb-4 mb-8 border-b-2 border-[#4A90E2]">
+            <h1 class="text-[#4A90E2] text-5xl uppercase tracking-widest font-bold">
+                Tech-X-OSINT Pro
+            </h1>
+            <p class="mt-2 text-xl opacity-80">Full Spectrum Intelligence Aggregator | Created by Arbab</p>
+            <div class="text-sm mt-1 text-gray-500 flex justify-center gap-4">
+                <p>
+                    USER ID: <span id="userIdDisplay" class="text-xs text-yellow-400">Loading...</span>
+                </p>
+                <p>
+                    DB STATUS: <span id="dbStatusDisplay" class="text-xs font-bold text-yellow-500">Initializing</span>
+                </p>
+            </div>
+        </header>
+
+        <!-- Main Input and Action -->
+        <div class="flex flex-col md:flex-row gap-4 mb-8">
+            <input
+                type="text"
+                id="mainInput"
+                placeholder="Username, Email, Hash, or Image URL yahan enter karein..."
+                class="flex-grow p-4 border-[#3B3B52] border-2 bg-[#282838] text-lg outline-none focus:border-[#7ED321]"
+            />
+            <button
+                id="searchButton"
+                class="bg-[#7ED321] hover:bg-[#61b816] text-[#1C1C28] p-4 font-bold text-lg whitespace-nowrap transition-transform duration-100"
+            >
+                RUN FULL OSINT SCAN
+            </button>
+            <button
+                id="addImageButton"
+                class="bg-[#00B0FF] hover:bg-[#008fcc] text-[#1C1C28] p-4 font-bold text-lg whitespace-nowrap transition-colors"
+                disabled
+            >
+                + ADD PIC TO GALLERY
+            </button>
+        </div>
+
+        <div id="loadingIndicator" class="w-full h-2 bg-[#3B3B52] mb-6 overflow-hidden hidden">
+            <div class="h-full bg-[#4A90E2] animate-pulse" style="width: 100%;"></div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+            <!-- Module 1: Username & Social Profile Aggregation -->
+            <div class="bg-[#282838] p-5 border-[#3B3B52] border">
+                <h2 class="text-xl text-[#4A90E2] border-b-2 border-[#3B3B52] pb-3 mb-4">[01] Username / Multi-Site Check</h2>
+                <div id="usernameLog" class="h-48 overflow-y-auto bg-[#15151F] p-2 log-scroll">
+                    <p class="text-gray-500 text-sm">Aapka result yahan dikhega...</p>
+                </div>
+            </div>
+
+            <!-- Module 2: Email & Detailed Breach Check -->
+            <div class="bg-[#282838] p-5 border-[#3B3B52] border">
+                <h2 class="text-xl text-[#4A90E2] border-b-2 border-[#3B3B52] pb-3 mb-4">[02] Email & Specific Breach Check</h2>
+                <div id="emailLog" class="h-48 overflow-y-auto bg-[#15151F] p-2 log-scroll">
+                    <p class="text-gray-500 text-sm">Aapka result yahan dikhega...</p>
+                </div>
+            </div>
+
+            <!-- Module 3: Hash & Password Vulnerability -->
+            <div class="bg-[#282838] p-5 border-[#3B3B52] border">
+                <h2 class="text-xl text-[#4A90E2] border-b-2 border-[#3B3B52] pb-3 mb-4">[03] Hash / Password Analysis</h2>
+                <div id="hashLog" class="h-48 overflow-y-auto bg-[#15151F] p-2 log-scroll">
+                    <p class="text-gray-500 text-sm">Aapka result yahan dikhega...</p>
+                </div>
+            </div>
+
+            <!-- Module 4: Image Gallery & Reverse Search -->
+            <div class="bg-[#282838] p-5 border-[#3B3B52] border lg:col-span-3">
+                <h2 class="text-xl text-[#4A90E2] border-b-2 border-[#3B3B52] pb-3 mb-4">[04] Image Gallery & Reverse Search</h2>
+                
+                <div class="flex flex-col md:flex-row gap-6">
+                    <!-- Gallery Panel -->
+                    <div class="w-full md:w-1/3">
+                        <h3 class="text-lg text-yellow-400 mb-3">Saved Pictures (Gallery)</h3>
+                        <div id="imageGalleryList" class="h-40 overflow-y-auto p-2 bg-[#15151F] log-scroll">
+                            <p class="text-gray-500 text-sm">Loading Gallery...</p>
+                        </div>
+                        <button
+                            id="scanSelectedImageButton"
+                            class="w-full mt-3 p-2 text-sm font-bold bg-gray-600 cursor-not-allowed"
+                            disabled
+                        >
+                            SELECT IMAGE TO SCAN
+                        </button>
+                    </div>
+                    
+                    <!-- Image Search Log -->
+                    <div class="w-full md:w-2/3">
+                        <h3 class="text-lg text-yellow-400 mb-3">Reverse Search Log</h3>
+                        <div id="imageLog" class="h-40 overflow-y-auto bg-[#15151F] p-2 log-scroll">
+                            <p class="text-gray-500 text-sm">Image scan ke results yahan dikhenge.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <footer class="footer">
+        <p class="text-sm opacity-60 text-center">WARNING: Yeh platform sirf authorized security research ke liye hai. | Tech-X-OSINT Pro</p>
+    </footer>
+
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- GLOBAL VARIABLES & FIREBASE CONFIG ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let db = null;
+        let auth = null;
+        let userId = null;
+        let isAuthReady = false;
+        let dbStatus = 'Initializing';
+        let isLoading = false;
+        let selectedImageUrl = null;
+        let imageGalleryData = [];
+
+        // --- DOM ELEMENTS ---
+        const DOMElements = {
+            mainInput: document.getElementById('mainInput'),
+            searchButton: document.getElementById('searchButton'),
+            addImageButton: document.getElementById('addImageButton'),
+            userIdDisplay: document.getElementById('userIdDisplay'),
+            dbStatusDisplay: document.getElementById('dbStatusDisplay'),
+            loadingIndicator: document.getElementById('loadingIndicator'),
+            usernameLog: document.getElementById('usernameLog'),
+            emailLog: document.getElementById('emailLog'),
+            hashLog: document.getElementById('hashLog'),
+            imageLog: document.getElementById('imageLog'),
+            imageGalleryList: document.getElementById('imageGalleryList'),
+            scanSelectedImageButton: document.getElementById('scanSelectedImageButton'),
+        };
+
+        // --- UTILITY FUNCTIONS ---
+        const getStatusColor = (status) => {
+            if (status === 'Connected') return 'text-green-500';
+            if (status === 'Error' || status === 'Disconnected') return 'text-red-500';
+            return 'text-yellow-500';
+        };
+
+        const updateDbStatus = (newStatus) => {
+            dbStatus = newStatus;
+            DOMElements.dbStatusDisplay.textContent = newStatus;
+            DOMElements.dbStatusDisplay.className = `text-xs font-bold ${getStatusColor(newStatus)}`;
+            // Update button disabled state based on connection
+            DOMElements.addImageButton.disabled = isLoading || newStatus !== 'Connected';
+        };
+
+        const updateLoadingState = (loading) => {
+            isLoading = loading;
+            DOMElements.mainInput.disabled = loading;
+            DOMElements.searchButton.textContent = loading ? 'ANALYZING...' : 'RUN FULL OSINT SCAN';
+            DOMElements.searchButton.disabled = loading;
+            DOMElements.addImageButton.disabled = loading || dbStatus !== 'Connected';
+            DOMElements.loadingIndicator.classList.toggle('hidden', !loading);
+            updateScanSelectedButtonState();
+        };
+        
+        const updateScanSelectedButtonState = () => {
+            const button = DOMElements.scanSelectedImageButton;
+            if (selectedImageUrl && !isLoading) {
+                button.textContent = 'SCAN SELECTED IMAGE';
+                button.disabled = false;
+                button.classList.remove('bg-gray-600', 'cursor-not-allowed');
+                button.classList.add('bg-[#7ED321]', 'hover:bg-[#61b816]', 'text-[#1C1C28]');
+            } else {
+                button.textContent = selectedImageUrl ? 'SCAN SELECTED IMAGE' : 'SELECT IMAGE TO SCAN';
+                button.disabled = true;
+                button.classList.add('bg-gray-600', 'cursor-not-allowed');
+                button.classList.remove('bg-[#7ED321]', 'hover:bg-[#61b816]', 'text-[#1C1C28]');
+            }
+        };
+
+        const renderLogLine = (message, type = 'blue') => {
+            let colorClass;
+            if (type === 'green') colorClass = 'text-[#7ED321]';
+            else if (type === 'red') colorClass = 'text-[#D0021B]';
+            else if (type === 'yellow') colorClass = 'text-[#FFC400]';
+            else colorClass = 'text-[#4A90E2]';
+            
+            return `<div class="text-xs p-0.5 ${colorClass}">${message}</div>`;
+        };
+        
+        const renderLogs = (logElement, logs) => {
+            if (logs.length === 0) {
+                logElement.innerHTML = '<p class="text-gray-500 text-sm">Aapka result yahan dikhega...</p>';
+            } else {
+                logElement.innerHTML = logs.map(log => renderLogLine(log.msg, log.type)).join('');
+            }
+        };
+
+        const renderGallery = () => {
+            const listElement = DOMElements.imageGalleryList;
+            if (imageGalleryData.length === 0) {
+                listElement.innerHTML = '<p class="text-gray-500 text-sm">Koi picture gallery mein nahi hai.</p>';
+                return;
+            }
+
+            listElement.innerHTML = imageGalleryData.map(item => {
+                const isSelected = selectedImageUrl === item.url;
+                const baseClass = 'p-1 text-sm truncate cursor-pointer hover:bg-[#4A90E2]/30 transition';
+                const selectedClass = isSelected ? 'bg-[#7ED321]/30 border-l-4 border-[#7ED321]' : 'border-l-4 border-transparent';
+                
+                return `<div data-url="${item.url}" class="${baseClass} ${selectedClass}">${item.name}</div>`;
+            }).join('');
+        };
+
+        // --- FIREBASE INITIALIZATION & AUTH ---
+        const initializeFirebase = async () => {
+            try {
+                setLogLevel('debug'); // Debugging enable kiya gaya
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                updateDbStatus('Authenticating...');
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                userId = auth.currentUser?.uid || crypto.randomUUID();
+                DOMElements.userIdDisplay.textContent = userId;
+                isAuthReady = true;
+                updateDbStatus('Connected');
+                console.log(`[Firebase] Authenticated as User ID: ${userId}`);
+
+                // Start Real-time Gallery Listener after auth
+                startGalleryListener();
+
+            } catch (error) {
+                console.error("[Firebase] Initialization or Authentication failed:", error);
+                userId = 'ANON_GUEST';
+                DOMElements.userIdDisplay.textContent = userId;
+                isAuthReady = true;
+                updateDbStatus('Error');
+            }
+        };
+
+        // --- GALLERY LISTENER ---
+        const startGalleryListener = () => {
+            if (!isAuthReady || !db || !userId) return;
+
+            const galleryPath = `artifacts/${appId}/users/${userId}/osint_gallery`;
+            const q = query(collection(db, galleryPath));
+
+            onSnapshot(q, (snapshot) => {
+                imageGalleryData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                imageGalleryData.sort((a, b) => b.timestamp - a.timestamp);
+                renderGallery();
+                updateDbStatus('Connected'); // Confirm connection on success
+            }, (error) => {
+                console.error("[Firestore] Gallery snapshot error:", error);
+                updateDbStatus('Disconnected'); // Disconnected status update
+            });
+        };
+
+        // --- OSINT LOGIC (SIMULATED) ---
+        
+        let currentLogs = { username: [], email: [], hash: [], image: [] };
+
+        const runUsernameScan = async (target) => {
+            const log = (msg, type = 'blue') => { currentLogs.username.push({ msg, type }); renderLogs(DOMElements.usernameLog, currentLogs.username); };
+            log(`[SCAN] Username search started on 50+ platforms...`, 'blue');
+
+            await new Promise(r => setTimeout(r, 1500));
+            
+            const foundOn = target.length > 5 ? ['Twitter', 'GitHub', 'Reddit', 'Instagram'] : ['None'];
+            log(`[RESULT] Profile Name Scan Complete.`, 'green');
+
+            if (foundOn.includes('Twitter')) {
+                log(`[MATCH] 🐦 Found on Twitter. Account created 2018.`, 'red');
+            }
+            if (foundOn.includes('GitHub')) {
+                log(`[MATCH] 🧑‍💻 Found on GitHub. Last contribution: 3 days ago.`, 'red');
+            }
+            if (foundOn.includes('Reddit')) {
+                log(`[MATCH] 📢 Found on Reddit. Active in r/security.`, 'yellow');
+            }
+            if (foundOn[0] === 'None') {
+                log(`[CLEAN] No strong matches found across major platforms.`, 'green');
+            }
+        };
+
+        const runEmailScan = async (target) => {
+            const log = (msg, type = 'blue') => { currentLogs.email.push({ msg, type }); renderLogs(DOMElements.emailLog, currentLogs.email); };
+            log(`[CHECK] Cross-referencing 10+ major breach APIs...`, 'blue');
+
+            await new Promise(r => setTimeout(r, 2000));
+            
+            const breaches = [];
+            if (target.includes('amazon')) breaches.push({ name: 'Amazon (2020)', exposed: 'Email, Address' });
+            if (target.includes('linked')) breaches.push({ name: 'LinkedIn (2016)', exposed: 'Email, Hashed Password' });
+            if (target.includes('root') || target.includes('admin')) breaches.push({ name: 'Data Leak (2023)', exposed: 'Plaintext Password' });
+
+            if (breaches.length > 0) {
+                log(`[CRITICAL] 🚨 Target found in ${breaches.length} major data breaches!`, 'red');
+                breaches.forEach(b => {
+                    log(`- BREACH: ${b.name} se data leak hua.`, 'red');
+                    log(`  EXPOSED: ${b.exposed}`, 'yellow');
+                });
+            } else {
+                log(`[CLEAN] No critical breach data found on record.`, 'green');
+            }
+        };
+
+        const runHashScan = async (target) => {
+            const log = (msg, type = 'blue') => { currentLogs.hash.push({ msg, type }); renderLogs(DOMElements.hashLog, currentLogs.hash); };
+            log(`[DICTIONARY] Checking Rainbow Tables & Known Password Lists...`, 'blue');
+            await new Promise(r => setTimeout(r, 1000));
+            if (target.startsWith('8d969eef')) { // Simulated match
+                log(`[CRACKED] Hash Matched! Password is 'test123'.`, 'red');
+            } else {
+                log(`[CLEAN] Hash not found in common databases. Safe.`, 'green');
+            }
+        };
+
+        const runImageScan = async (imageUrl) => {
+            const log = (msg, type = 'blue') => { currentLogs.image.push({ msg, type }); renderLogs(DOMElements.imageLog, currentLogs.image); };
+            log(`[SEARCH] Starting Deep Reverse Image Scan on major engines...`, 'blue');
+
+            await new Promise(r => setTimeout(r, 2500));
+            
+            if (imageUrl && imageUrl.includes('profile')) {
+                log(`[MATCH] Image matched 4 times on LinkedIn and Portfolio Site.`, 'red');
+                log(`[GEO] Simulated EXIF Data: Last known location metadata found.`, 'yellow');
+            } else {
+                log(`[CLEAN] No significant matches found across reverse search engines.`, 'green');
+            }
+        };
+
+        // --- HANDLERS ---
+        
+        const clearLogs = () => {
+            currentLogs = { username: [], email: [], hash: [], image: [] };
+            renderLogs(DOMElements.usernameLog, currentLogs.username);
+            renderLogs(DOMElements.emailLog, currentLogs.email);
+            renderLogs(DOMElements.hashLog, currentLogs.hash);
+            renderLogs(DOMElements.imageLog, currentLogs.image);
+        };
+
+        const handleSearch = () => {
+            const target = DOMElements.mainInput.value.trim();
+            if (!target && !selectedImageUrl) return;
+
+            updateLoadingState(true);
+            clearLogs();
+            
+            const scanTarget = selectedImageUrl || target; // Selected image URL ya input target
+
+            // Run all four modules concurrently (simulated)
+            const allTasks = [
+                runUsernameScan(target),
+                runEmailScan(target),
+                runHashScan(target),
+                runImageScan(scanTarget),
+            ];
+
+            Promise.all(allTasks).finally(() => {
+                updateLoadingState(false);
+            });
+        };
+
+        const addImageToGallery = async () => {
+            const target = DOMElements.mainInput.value.trim();
+            
+            if (dbStatus !== 'Connected') {
+                alert("Database is not connected. Kripya wait karein ya connection check karein.");
+                return;
+            }
+            if (!isAuthReady || !db || !userId || !target) {
+                alert("Database ready nahi hai ya target empty hai. Kripya wait karein.");
+                return;
+            }
+
+            if (!target.startsWith('http') && !target.endsWith('.jpg') && !target.endsWith('.png')) {
+                alert("Please enter a valid-looking Image URL or descriptive Name.");
+                return;
+            }
+            
+    
