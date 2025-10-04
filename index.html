@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech OSINT Pro: Email Breach Finder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        // Using a monospace font for a techy look
+                        sans: ['Roboto Mono', 'monospace'],
+                    },
+                    colors: {
+                        'primary-dark': '#111827', // Deep Dark Gray/Black
+                        'secondary-dark': '#1f2937', // Slightly lighter dark background
+                        'accent-green': '#10b981', // Neon Green/Success
+                        'accent-red': '#ef4444', // Danger Red
+                        'text-light': '#f3f4f6', // Light gray text
+                        'text-muted': '#9ca3af', // Muted text
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Apply Dark Background and Monospace Font */
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #030712; /* Even darker, almost black background */
+            color: #f3f4f6;
+        }
+        /* Custom loading spinner styles (in neon green) */
+        .spinner {
+            border-top-color: #10b981;
+            border-right-color: transparent;
+            border-bottom-color: #10b981;
+            border-left-color: #10b981;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-lg bg-primary-dark shadow-2xl rounded-xl p-6 md:p-10 border border-gray-700/50">
+
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-accent-green mb-2">
+                // Tech OSINT Pro
+            </h1>
+            <p class="text-lg text-text-light">Email Breach Finder</p>
+            <p class="mt-4 text-sm text-text-muted">
+                Input target email to check against simulated compromised databases.
+            </p>
+        </header>
+
+        <div class="space-y-4">
+            <input
+                type="email"
+                id="emailInput"
+                placeholder=">>> Enter email_address_target"
+                class="w-full p-3 border border-gray-600 bg-secondary-dark rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-green text-text-light transition duration-150 placeholder-gray-500"
+            >
+            <button
+                id="searchButton"
+                onclick="handleSearch()"
+                class="w-full flex items-center justify-center p-3 bg-accent-green text-primary-dark font-semibold rounded-lg hover:bg-green-500 transition duration-300 shadow-lg shadow-accent-green/30 disabled:opacity-50"
+            >
+                <svg id="buttonIcon" class="w-5 h-5 mr-2 text-primary-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6-6v2m12-2v2M6 10H4a2 2 0 00-2 2v2a2 2 0 002 2h2m12-2v-2a2 2 0 00-2-2h-2m-12 0V8a2 2 0 012-2h2m12 0V6a2 2 0 00-2-2h-2m-2-4v2m-6 0v2"></path>
+                </svg>
+                <span id="buttonText">Initiate Scan (check.db)</span>
+            </button>
+        </div>
+
+        <div id="resultsArea" class="mt-8 hidden">
+            <div id="summaryCard" class="p-4 rounded-lg transition-all duration-500 border">
+                <h2 id="summaryTitle" class="text-xl font-bold mb-2"></h2>
+                <p id="summaryMessage" class="text-text-light"></p>
+            </div>
+
+            <div id="breachDetails" class="mt-4 hidden space-y-3">
+                <h3 class="text-lg font-bold text-accent-green border-b border-gray-700 pb-2">:: Compromised Sources List</h3>
+                <ul id="breachList" class="space-y-3">
+                    </ul>
+                <p class="text-sm text-yellow-400 pt-2">
+                    <span class="font-bold">// WARNING:</span> Recommend immediate password renewal across all services.
+                </p>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="mt-4 p-3 bg-accent-red/20 text-accent-red border border-accent-red rounded-lg hidden">
+            </div>
+
+    </div>
+
+    <script>
+        const emailInput = document.getElementById('emailInput');
+        const searchButton = document.getElementById('searchButton');
+        const buttonText = document.getElementById('buttonText');
+        const buttonIcon = document.getElementById('buttonIcon');
+        const resultsArea = document.getElementById('resultsArea');
+        const summaryCard = document.getElementById('summaryCard');
+        const summaryTitle = document.getElementById('summaryTitle');
+        const summaryMessage = document.getElementById('summaryMessage');
+        const breachDetails = document.getElementById('breachDetails');
+        const breachList = document.getElementById('breachList');
+        const errorMessage = document.getElementById('errorMessage');
+
+        const BREACH_DATA = [
+            { name: "Global E-Commerce Leak", date: "2023-05-15", exposed: ["Email", "Password Hash", "IP Address"] },
+            { name: "Gaming Forum Database", date: "2022-11-01", exposed: ["Email", "Username", "Date of Birth"] },
+            { name: "Cloud Storage Service", date: "2021-08-20", exposed: ["Email", "Geolocation Data"] },
+            { name: "Mock Test Data Site", date: "2024-01-01", exposed: ["Email"] },
+            { name: "Old Social Network", date: "2019-03-25", exposed: ["Email", "Password (Plaintext)"] }
+        ];
+
+        function isValidEmail(email) {
+            const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            return re.test(String(email).toLowerCase());
+        }
+
+        function checkBreaches(email) {
+            if (email.toLowerCase().includes('safe')) {
+                return []; 
+            } else if (email.toLowerCase().includes('critical') || email.toLowerCase().includes('breached')) {
+                return [BREACH_DATA[0], BREACH_DATA[1], BREACH_DATA[4]];
+            } else if (email.toLowerCase().includes('test')) {
+                return [BREACH_DATA[3]];
+            } else {
+                return [BREACH_DATA[2], BREACH_DATA[0]];
+            }
+        }
+
+        async function handleSearch() {
+            const email = emailInput.value.trim();
+            resultsArea.classList.add('hidden');
+            errorMessage.classList.add('hidden');
+
+            if (!isValidEmail(email)) {
+                errorMessage.innerHTML = '<strong>[ ERROR ] :</strong> Invalid email format detected. Target must be a valid email.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            // 2. Set Loading State
+            searchButton.disabled = true;
+            buttonText.textContent = 'Processing request...';
+            // Spinner setup
+            buttonIcon.classList.remove('w-5', 'h-5', 'mr-2', 'text-primary-dark');
+            buttonIcon.classList.add('spinner', 'w-5', 'h-5', 'mr-2', 'border-4', 'rounded-full');
+            buttonIcon.innerHTML = ''; 
+
+            try {
+                // Simulate network latency (2 seconds)
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                const breaches = checkBreaches(email);
+                displayResults(email, breaches);
+
+            } catch (error) {
+                console.error("Search failed:", error);
+                errorMessage.innerHTML = '<strong>[ FAIL ] :</strong> Connection terminated. Unexpected error during search simulation.';
+                errorMessage.classList.remove('hidden');
+            } finally {
+                // 5. Reset Button State
+                searchButton.disabled = false;
+                buttonText.textContent = 'Initiate Scan (check.db)';
+                // Restore lock icon
+                buttonIcon.classList.remove('spinner', 'w-5', 'h-5', 'mr-2', 'border-4', 'rounded-full');
+                buttonIcon.classList.add('w-5', 'h-5', 'mr-2', 'text-primary-dark');
+                buttonIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6-6v2m12-2v2M6 10H4a2 2 0 00-2 2v2a2 2 0 002 2h2m12-2v-2a2 2 0 00-2-2h-2m-12 0V8a2 2 0 012-2h2m12 0V6a2 2 0 00-2-2h-2m-2-4v2m-6 0v2"></path>';
+            }
+        }
+
+        function displayResults(email, breaches) {
+            breachList.innerHTML = ''; 
+            breachDetails.classList.add('hidden');
+            
+            // Text color classes for dark theme
+            const successTextColor = 'text-accent-green';
+            const dangerTextColor = 'text-accent-red';
+
+            if (breaches.length === 0) {
+                // No Breaches Found
+                summaryCard.className = 'p-4 rounded-xl bg-accent-green/20 border border-accent-green transition-all duration-500';
+                summaryTitle.textContent = ':: STATUS: CLEAN [ 0 BREACHES ]';
+                summaryTitle.classList.remove(dangerTextColor);
+                summaryTitle.classList.add(successTextColor);
+                summaryMessage.textContent = `Target email "${email}" not found in local database. Security status: Secure.`;
+
+            } else {
+                // Breaches Found
+                summaryCard.className = 'p-4 rounded-xl bg-accent-red/20 border border-accent-red transition-all duration-500';
+                summaryTitle.textContent = `:: STATUS: COMPROMISED [ ${breaches.length} BREACHES ]`;
+                summaryTitle.classList.remove(successTextColor);
+                summaryTitle.classList.add(dangerTextColor);
+                summaryMessage.textContent = `Target email "${email}" has been found in ${breaches.length} leaks. Analysis required immediately.`;
+
+                // Populate the detailed list
+                breaches.forEach((breach, index) => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'p-3 bg-secondary-dark border border-gray-700 rounded-lg shadow-md';
+                    listItem.innerHTML = `
+                        <p class="font-bold text-text-light">${index + 1}. ${breach.name}</p>
+                        <p class="text-sm text-text-muted">
+                            Data Loss: <span class="font-medium">${breach.date}</span>
+                        </p>
+                        <p class="text-sm text-gray-400 mt-1">
+                            <span class="font-bold">EXPOSED:</span>
+                            <span class="font-mono text-xs inline-block ml-1 px-2 py-0.5 bg-yellow-400/20 text-yellow-300 rounded-full">
+                                ${breach.exposed.join(', ')}
+                            </span>
+                        </p>
+                    `;
+                    breachList.appendChild(listItem);
+                });
+
+                breachDetails.classList.remove('hidden');
+            }
+
+            resultsArea.classList.remove('hidden');
+        }
+
+        // Initialize and Event Listeners
+        window.onload = () => {
+            emailInput.focus();
+        };
+
+        emailInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleSearch();
+            }
+        });
+    </script>
+
+</body>
+</html>
